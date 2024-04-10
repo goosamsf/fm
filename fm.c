@@ -7,12 +7,30 @@ curr_node* curr_level;
 char ** child_level;
 char ** parent_level;
 int c_menumax;
+int p_menumax;
+WINDOW *curr_win;
+WINDOW *paren_win;
+WINDOW *child_win;
 
 int main(void){
   int menuitem = 0; 
   int key;
+
   update_curr_level();
+
   initscr();
+  if((curr_win = newwin(LINES,COLS, 2, COLS/3)) == NULL){
+    perror("newwin");
+    exit(EXIT_FAILURE);
+  }
+  if((paren_win = newwin(LINES,COLS, 2, 0)) == NULL){
+    perror("newwin");
+    exit(EXIT_FAILURE);
+  }
+
+  printw("window size is %d row, %d,", LINES, COLS);
+  refresh();
+  draw_paren_level("453");
   draw_curr_level(menuitem);
   keypad(stdscr,TRUE);
   noecho();
@@ -53,24 +71,38 @@ void update_curr_level(void){
   } 
   con_files(".");
   qsort(curr_level, m_num_files, sizeof(curr_node), compare_node);
+  curr_level[0].parent = con_pa_files("..");
 }
 
 
 void draw_curr_level(int item){
   int i;
   //print_level(curr_level, m_num_files);
-  clear();
-  addstr("Printing Current level's files");
+  //clear();
+  //addstr("Printing Current level's files");
+  //mvprintw(2, COLS/COLS, "%d", 0);
   for (i = 0; i < c_menumax; i++) {
     if(i == item) {
-      attron(A_REVERSE);
+      wattron(curr_win, A_REVERSE);
     }
-    mvaddstr(3 + (i*2) , 20 , curr_level[i].name);
-    attroff(A_REVERSE);
+    mvwaddstr(curr_win, i, 0, curr_level[i].name);
+    wattroff(curr_win, A_REVERSE);
   }
-  mvaddstr(17,25, "Use jk keys to move; Enter to select");
+  mvwaddstr(curr_win,17,25, "Use jk keys to move; Enter to select");
+  wrefresh(curr_win);
   refresh();
-
+}
+void draw_paren_level(char *parent){
+  int i;
+  for ( i = 0; i < p_menumax; i++ ){
+    if(!strcmp(curr_level[0].parent[i], parent)){
+      wattron(paren_win, A_REVERSE);
+    }
+    mvwaddstr(paren_win, i, 0, curr_level[0].parent[i]);
+    wattroff(paren_win, A_REVERSE);
+  }
+  wrefresh(paren_win);
+  refresh();
 }
 
 void print_level(char** level, int num){
@@ -112,6 +144,7 @@ void con_files(char *path){
     fprintf(stderr, "Failed to get opendinr in get_num_files\n");
     return;
   }
+  //curr[0].parent = con_pa_files("..");
   while((entry =readdir(dir)) != NULL){
     if(strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")){
       curr[i].name = strdup(entry->d_name);
@@ -123,6 +156,37 @@ void con_files(char *path){
     }
   }
   closedir(dir);
+}
+
+char **con_pa_files(char *filename){
+  DIR *dir;
+  struct dirent *entry;
+  int i = 0;
+  if((dir = opendir(filename)) == NULL){
+    fprintf(stderr, "Failed to get opendinr in get_num_files\n");
+    exit(EXIT_FAILURE);
+  }
+  char **pa_files = NULL;
+  int num_files = get_num_files(filename);
+  p_menumax = num_files;
+  if((pa_files = malloc(sizeof(char*)*num_files)) == NULL){
+    perror("malloc");
+    exit(EXIT_FAILURE);
+  }
+  while((entry = readdir(dir)) != NULL){
+    if(strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")){
+      pa_files[i++] = strdup(entry->d_name);
+    }
+  }
+  qsort(pa_files, num_files, sizeof(char*), compare_string);
+  //
+  printf("parent files : \n");
+  for (i = 0; i < num_files; i++){
+    printf("%s\n", pa_files[i]);
+  }
+  closedir(dir);
+  return pa_files;
+
 }
 
 char **con_ch_files(char *filename){

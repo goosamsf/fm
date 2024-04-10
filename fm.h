@@ -15,8 +15,10 @@ void print_level(char** level, int num);
 void update_curr_level(void);
 
 char** con_ch_files(char *filename);
+char** con_pa_files(char *filename);
 int is_dir(char *filename);
 
+void draw_paren_level(char *parent);
 typedef struct curr_node {
   char *name;
   char **child;
