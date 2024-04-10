@@ -5,12 +5,14 @@
 #include<stdlib.h>
 #include <sys/stat.h>
 #include <ncurses.h>
+#include<unistd.h>
 
 int get_num_files(char * path);
 void con_files(char *path);
 int compare_node(const void *a, const void *b);
 int compare_string(const void *a, const void *b);
 void draw_curr_level(int item);
+void draw_child_level(int item);
 void print_level(char** level, int num);
 void update_curr_level(void);
 

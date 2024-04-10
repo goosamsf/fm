@@ -6,8 +6,10 @@
 curr_node* curr_level;
 char ** child_level;
 char ** parent_level;
+char *hi_parent;
 int c_menumax;
 int p_menumax;
+int ch_menumax;
 WINDOW *curr_win;
 WINDOW *paren_win;
 WINDOW *child_win;
@@ -23,7 +25,11 @@ int main(void){
     perror("newwin");
     exit(EXIT_FAILURE);
   }
-  if((paren_win = newwin(LINES,COLS, 2, 0)) == NULL){
+  if((paren_win = newwin(LINES,COLS, 2, 1)) == NULL){
+    perror("newwin");
+    exit(EXIT_FAILURE);
+  }
+  if((child_win = newwin(LINES,COLS, 2,COLS - COLS/3)) == NULL){
     perror("newwin");
     exit(EXIT_FAILURE);
   }
@@ -32,6 +38,8 @@ int main(void){
   refresh();
   draw_paren_level("453");
   draw_curr_level(menuitem);
+  draw_child_level(0);
+  //draw_child_level();
   keypad(stdscr,TRUE);
   noecho();
   do {
@@ -53,6 +61,7 @@ int main(void){
         break;
     }
     draw_curr_level(menuitem);
+    draw_child_level(menuitem);
   }while(key != 'q');
   echo();
   endwin();
@@ -61,6 +70,7 @@ int main(void){
 }
 void update_curr_level(void){
   int m_num_files = get_num_files(".");
+  
   c_menumax = m_num_files;
   if(curr_level){
     free(curr_level);
@@ -74,6 +84,27 @@ void update_curr_level(void){
   curr_level[0].parent = con_pa_files("..");
 }
 
+void draw_child_level(int item){
+  int i, chmenu = 0;
+  char **localchild = curr_level[item].child;
+  if(!localchild){
+    werase(child_win);
+    wrefresh(child_win);
+    return;
+  }
+  while(localchild[chmenu] != NULL){
+    chmenu++;
+  }
+  for(i = 0; i< chmenu; i++){
+    if(i == 0){
+     wattron(child_win, A_REVERSE); 
+    }
+    mvwaddstr(child_win, i, 0, localchild[i]);
+    wattroff(child_win,A_REVERSE);
+  }
+  wrefresh(child_win);
+  refresh();
+}
 
 void draw_curr_level(int item){
   int i;
@@ -92,6 +123,7 @@ void draw_curr_level(int item){
   wrefresh(curr_win);
   refresh();
 }
+
 void draw_paren_level(char *parent){
   int i;
   for ( i = 0; i < p_menumax; i++ ){
@@ -179,11 +211,12 @@ char **con_pa_files(char *filename){
     }
   }
   qsort(pa_files, num_files, sizeof(char*), compare_string);
-  //
+  /*
   printf("parent files : \n");
   for (i = 0; i < num_files; i++){
     printf("%s\n", pa_files[i]);
   }
+  */
   closedir(dir);
   return pa_files;
 
@@ -199,7 +232,8 @@ char **con_ch_files(char *filename){
   }
   char **ch_files= NULL;
   int num_files = get_num_files(filename);
-  if((ch_files = malloc(sizeof(char*) * num_files)) == NULL){
+  ch_menumax = num_files;
+  if((ch_files = malloc(sizeof(char*) * num_files + 1)) == NULL){
     perror("malloc");
     exit(EXIT_FAILURE);
   } 
@@ -209,10 +243,16 @@ char **con_ch_files(char *filename){
     }
   }
   qsort(ch_files, num_files, sizeof(char*), compare_string);
-  //
-  for (i = 0; i < num_files; i++){
-    printf("%s\n", ch_files[i]);
+  ch_files[i] = NULL;
+  /*
+  for (i = 0; i < num_files+1; i++){
+    if(ch_files[i]){
+      printf("%s\n", ch_files[i]);
+    }else{
+      printf("NULL\n");
+    }
   }
+  */
   closedir(dir);
   return ch_files;
 }
