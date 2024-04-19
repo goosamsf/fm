@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <dirent.h>
-
 #include <string.h>
-#include<stdlib.h>
+#include <stdlib.h>
 #include <sys/stat.h>
+#include <sys/param.h>
+#include <unistd.h>
 #include <ncurses.h>
-#include<unistd.h>
 
 int get_num_files(char * path);
 void con_files(char *path);
@@ -21,8 +21,12 @@ char** con_pa_files(char *filename);
 int is_dir(char *filename);
 
 void draw_paren_level(char *parent);
+
 typedef struct curr_node {
+  int num_files;
+  int num_hidden_files;
   char *name;
+  char **hidden;
   char **child;
   char **parent;
 } curr_node;
