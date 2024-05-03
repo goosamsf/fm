@@ -25,7 +25,6 @@ int main(void){
     perror("newwin");
     exit(EXIT_FAILURE);
   }
-  scrollok(curr_win, TRUE);
   if((paren_win = newwin(LINES,COLS, 2, 1)) == NULL){
     perror("newwin");
     exit(EXIT_FAILURE);
@@ -34,6 +33,7 @@ int main(void){
     perror("newwin");
     exit(EXIT_FAILURE);
   }
+  scrollok(curr_win, TRUE);
 
 
   printw("window size is %d row, %d,", LINES, COLS);
@@ -59,6 +59,19 @@ int main(void){
           menuitem = c_menumax-1;
         }
         break;
+      case 'h':
+        chdir("..");
+        update_curr_level();
+        menuitem = 0;
+        draw_paren_level(hi_parent);
+        break;
+
+      case 'l':
+        chdir(curr_level[menuitem].name);
+        update_curr_level();
+        menuitem = 0;
+        draw_paren_level(hi_parent);
+        break;
       default:
         break;
     }
@@ -71,33 +84,170 @@ int main(void){
   return 0;
 }
 void update_curr_level(void){
-  int m_num_files = get_num_files(".");
+  /*
+   * update current level 
+   * get the number of files in current directory
+   *
+   */
+  num_files_t nfiles;
+  get_num_files(".", &nfiles);
+  int num_files = nfiles.nf;
+  int num_hiddens = nfiles.nh;
   
-  c_menumax = m_num_files;
+  c_menumax = num_files;
   if(curr_level){
     free(curr_level);
   }
-  if((curr_level = malloc(sizeof(curr_node) * m_num_files)) == NULL){
+  if((curr_level = malloc(sizeof(curr_node) * c_menumax)) == NULL){
     perror("malloc");
     exit(EXIT_FAILURE);
   } 
 
   con_files(".");
-  qsort(curr_level, m_num_files, sizeof(curr_node), compare_node);
+  qsort(curr_level, c_menumax, sizeof(curr_node), compare_node);
   curr_level[0].parent = con_pa_files("..");
+}
+
+void con_files(char *path){
+  /* construct file list */
+  int i = 0;
+  DIR *dir;
+  struct dirent *entry;
+  char *filename;
+  curr_node* curr = curr_level;
+  if((dir = opendir(path)) == NULL){
+    fprintf(stderr, "Failed to get opendinr in get_num_files\n");
+    return;
+  }
+  //curr[0].parent = con_pa_files("..");
+  while((entry =readdir(dir)) != NULL){
+    filename = entry->d_name;
+    if(filename[0] == '.'){
+    //if filename begins with dot
+
+    }else{
+      //regular file 
+      curr[i].name = strdup(filename);
+      curr[i].child = NULL;
+      if(is_dir(filename)){
+        //If this directory get child directory
+        curr[i].child = con_ch_files(filename);
+      }
+      i++;
+    }
+  }
+  closedir(dir);
+}
+
+char **con_ch_files(char *path){
+  DIR *dir;
+  struct dirent *entry;
+  int i = 0;
+  int num_files;
+  char **ch_files= NULL;
+  char *filename = NULL;
+  num_files_t nfiles;
+  get_num_files(path, &nfiles);
+  num_files = nfiles.nf;
+  ch_menumax = num_files;
+
+  if((ch_files = malloc(sizeof(char*) * num_files + 1)) == NULL){
+    perror("malloc");
+    exit(EXIT_FAILURE);
+  } 
+
+  if((dir = opendir(path)) == NULL){
+    printf("tryiing to open filename : %s\n",path);
+    fprintf(stderr, "Failed to get opendir in con_ch_files\n");
+    return NULL;
+    exit(EXIT_FAILURE);
+  }
+  
+  //int num_files = get_num_files(filename);
+  while((entry = readdir(dir)) != NULL){
+    filename = entry->d_name;
+    if(filename[0] != '.'){
+      ch_files[i++] = strdup(filename);
+    }
+  }
+  qsort(ch_files, num_files, sizeof(char*), compare_string);
+  ch_files[i] = NULL;
+  closedir(dir);
+  return ch_files;
+}
+
+char **con_pa_files(char * path){
+  DIR *dir;
+  struct dirent *entry;
+  num_files_t nfiles;
+  int i = 0;
+  char cwd[MAXPATHLEN];
+  char *parentdir = NULL;
+  size_t slen;
+  char *filename = NULL;
+  
+  if (getcwd(cwd, sizeof(cwd)) == NULL) {
+    //printf("Current directory is: %s\n", cwd);
+    perror("getcwd");
+    exit(EXIT_FAILURE);
+  }
+
+  if((parentdir= strrchr(cwd, '/')) == NULL){
+    perror("strrchr");
+    exit(EXIT_FAILURE);
+  }
+  parentdir++;  /* skip '/' */
+  slen = strlen(parentdir);
+
+  hi_parent = strndup(parentdir,slen ); /* get highlighted value in parent */
+  
+  if((dir = opendir(path)) == NULL){
+    fprintf(stderr, "Failed to get opendir in con_pa_files\n");
+    exit(EXIT_FAILURE);
+  }
+  char **pa_files = NULL;
+  //int num_files = get_num_files(filename);
+  get_num_files(path, &nfiles);
+  int num_files = nfiles.nf;
+
+  p_menumax = num_files;
+  if((pa_files = malloc(sizeof(char*)*num_files)) == NULL){
+    perror("malloc");
+    exit(EXIT_FAILURE);
+  }
+  while((entry = readdir(dir)) != NULL){
+    filename = entry->d_name; 
+    pa_files[i] = NULL;
+    if(filename[0] != '.'){
+      pa_files[i++] = strdup(filename);
+    }
+  }
+  qsort(pa_files, num_files, sizeof(char*), compare_string);
+  /*
+  printf("parent files : \n");
+  for (i = 0; i < num_files; i++){
+    printf("%s\n", pa_files[i]);
+  }
+  */
+  closedir(dir);
+  return pa_files;
+
 }
 
 void draw_child_level(int item){
   int i, chmenu = 0;
   char **localchild = curr_level[item].child;
+  werase(child_win);
+  wrefresh(child_win);
+  
   if(!localchild){
-    werase(child_win);
-    wrefresh(child_win);
     return;
   }
+  
   while(localchild[chmenu] != NULL){
     chmenu++;
   }
+  
   for(i = 0; i< chmenu; i++){
     if(i == 0){
      wattron(child_win, A_REVERSE); 
@@ -106,11 +256,13 @@ void draw_child_level(int item){
     wattroff(child_win,A_REVERSE);
   }
   wrefresh(child_win);
-  refresh();
+  //refresh();
 }
 
 void draw_curr_level(int item){
   int i;
+  werase(curr_win);
+  wrefresh(curr_win);
   //print_level(curr_level, m_num_files);
   //clear();
   //addstr("Printing Current level's files");
@@ -129,6 +281,8 @@ void draw_curr_level(int item){
 
 void draw_paren_level(char *parent){
   int i;
+  werase(paren_win);
+  wrefresh(paren_win);
   for ( i = 0; i < p_menumax; i++ ){
     if(!strcmp(curr_level[0].parent[i], parent)){
       wattron(paren_win, A_REVERSE);
@@ -137,7 +291,7 @@ void draw_paren_level(char *parent){
     wattroff(paren_win, A_REVERSE);
   }
   wrefresh(paren_win);
-  refresh();
+  //refresh();
 }
 
 void print_level(char** level, int num){
@@ -169,144 +323,32 @@ int is_dir(char *filename){
   return (S_ISDIR(fileStat.st_mode));
 }
 
-void con_files(char *path){
-  /* construct file list */
-  int i = 0;
+
+
+
+void get_num_files(char * path, num_files_t *numfiles){
+  /* read directory specified by path and return number of files
+   * without counting . and .. */
+  int count = 0;
+  int hidden = 0;
   DIR *dir;
   struct dirent *entry;
-  //char *filename;
-  curr_node* curr = curr_level;
+  char *filename;
   if((dir = opendir(path)) == NULL){
     fprintf(stderr, "Failed to get opendinr in get_num_files\n");
     return;
   }
-  //curr[0].parent = con_pa_files("..");
   while((entry =readdir(dir)) != NULL){
-    //filename = entry->d_name;
-    if(strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")){
-      /*
-      if(filename[0] == '.'){
-        //If hidden file, handle it
-        continue;
-      } 
-      */
-      curr[i].name = strdup(entry->d_name);
-      if(is_dir(entry->d_name)){
-        //If this directory get child directory
-        curr[i].child = con_ch_files(entry->d_name);
-      }
-      i++;
-    }
-  }
-  closedir(dir);
-}
-
-char **con_pa_files(char *filename){
-  DIR *dir;
-  struct dirent *entry;
-  int i = 0;
-  char cwd[MAXPATHLEN];
-  char *parentdir = NULL;
-  size_t slen;
-  
-  if (getcwd(cwd, sizeof(cwd)) == NULL) {
-    //printf("Current directory is: %s\n", cwd);
-    perror("getcwd");
-    exit(EXIT_FAILURE);
-  }
-
-  if((parentdir= strrchr(cwd, '/')) == NULL){
-    perror("strrchr");
-    exit(EXIT_FAILURE);
-  }
-  parentdir++;  /* skip '/' */
-  slen = strlen(parentdir);
-
-  hi_parent = strndup(parentdir,slen ); /* get highlighted value in parent */
-  
-  if((dir = opendir(filename)) == NULL){
-    fprintf(stderr, "Failed to get opendir in con_pa_files\n");
-    exit(EXIT_FAILURE);
-  }
-  char **pa_files = NULL;
-  int num_files = get_num_files(filename);
-  p_menumax = num_files;
-  if((pa_files = malloc(sizeof(char*)*num_files)) == NULL){
-    perror("malloc");
-    exit(EXIT_FAILURE);
-  }
-  while((entry = readdir(dir)) != NULL){
-    if(strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")){
-      pa_files[i++] = strdup(entry->d_name);
-    }
-  }
-  qsort(pa_files, num_files, sizeof(char*), compare_string);
-  /*
-  printf("parent files : \n");
-  for (i = 0; i < num_files; i++){
-    printf("%s\n", pa_files[i]);
-  }
-  */
-  closedir(dir);
-  return pa_files;
-
-}
-
-char **con_ch_files(char *filename){
-  DIR *dir;
-  struct dirent *entry;
-  int i = 0;
-  if((dir = opendir(filename)) == NULL){
-    printf("tryiing to open filename : %s\n",filename);
-    fprintf(stderr, "Failed to get opendir in con_ch_files\n");
-    return NULL;
-    exit(EXIT_FAILURE);
-  }
-  char **ch_files= NULL;
-  int num_files = get_num_files(filename);
-  ch_menumax = num_files;
-  if((ch_files = malloc(sizeof(char*) * num_files + 1)) == NULL){
-    perror("malloc");
-    exit(EXIT_FAILURE);
-  } 
-  while((entry = readdir(dir)) != NULL){
-    if(strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")){
-      ch_files[i++] = strdup(entry->d_name);
-    }
-  }
-  qsort(ch_files, num_files, sizeof(char*), compare_string);
-  ch_files[i] = NULL;
-  /*
-  for (i = 0; i < num_files+1; i++){
-    if(ch_files[i]){
-      printf("%s\n", ch_files[i]);
+    filename = entry->d_name;
+    if(filename[0]== '.'){
+      hidden++;
     }else{
-      printf("NULL\n");
-    }
-  }
-  */
-  closedir(dir);
-  return ch_files;
-}
-
-int get_num_files(char * path){
-  /* read directory specified by path and return number of files
-   * without counting . and .. */
-  int count = 0;
-  DIR *dir;
-  struct dirent *entry;
-  if((dir = opendir(path)) == NULL){
-    printf("file name : %s\n", path);
-    fprintf(stderr, "Failed to get opendinr in get_num_files\n");
-    return 0;
-  }
-  while((entry =readdir(dir)) != NULL){
-    if(strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")){
       count++;
     }
   }
   closedir(dir);
-  return count;
+  numfiles->nf = count;
+  numfiles->nh = hidden;
 }
 
 

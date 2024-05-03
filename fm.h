@@ -7,7 +7,23 @@
 #include <unistd.h>
 #include <ncurses.h>
 
-int get_num_files(char * path);
+typedef struct curr_node {
+  int nf;
+  int nh;
+  char *name;
+  char **hiddens;
+  char **child;
+  char **parent;
+} curr_node;
+
+typedef struct num_files_t{
+  /*pair value of number of files */
+  int nf;
+  int nh;
+} num_files_t;
+
+void get_num_files(char* path, num_files_t *nf);
+//int get_num_files(char * path);
 void con_files(char *path);
 int compare_node(const void *a, const void *b);
 int compare_string(const void *a, const void *b);
@@ -22,11 +38,3 @@ int is_dir(char *filename);
 
 void draw_paren_level(char *parent);
 
-typedef struct curr_node {
-  int num_files;
-  int num_hidden_files;
-  char *name;
-  char **hidden;
-  char **child;
-  char **parent;
-} curr_node;
