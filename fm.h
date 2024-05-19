@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <ncurses.h>
 #include <fcntl.h>
+#include <errno.h> // Include errno.h header file
 typedef struct curr_node {
   int nf;
   int nh;
@@ -40,5 +41,5 @@ int is_dir(char *filename);
 void draw_paren_level(int *p_index);
 
 void openTextEditor(char *filename);
-
+void displayCurrPath();
 void showFileContents(char *filename);

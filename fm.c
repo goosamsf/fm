@@ -38,7 +38,7 @@ int main(void){
   scrollok(curr_win, TRUE);
 
 
-  printw("window size is %d row, %d,", LINES, COLS);
+  displayCurrPath();
   refresh();
   draw_paren_level(&p_index);
   draw_curr_level(menuitem);
@@ -62,6 +62,7 @@ int main(void){
         break;
       case 'h':
         chdir("..");
+        displayCurrPath();
         menuitem = p_index;
         update_curr_level(&p_index);
         draw_paren_level(&p_index);
@@ -74,6 +75,7 @@ int main(void){
           initscr();
         }else{
           chdir(curr_level[menuitem].name);
+          displayCurrPath();
           menuitem = 0;
           update_curr_level(&p_index);
           draw_paren_level(&p_index);
@@ -444,6 +446,12 @@ void get_num_files(char * path, num_files_t *numfiles){
 void showFileContents(char *filename){
   int fd;
   if((fd = open(filename , O_RDONLY)) == -1){
+    if(errno == EACCES){
+      mvwaddstr(child_win,0,0,"Permission Denied\n");
+      wattron(child_win, A_REVERSE); 
+      wrefresh(child_win);
+      return;
+    }
     fprintf(stderr, "Failed to open file\n ");
     exit(EXIT_FAILURE);
   }
@@ -455,5 +463,16 @@ void showFileContents(char *filename){
   }
   mvwaddstr(child_win, 0, 0,buffer);
   wrefresh(child_win);
-
+  close(fd);
 }
+
+void displayCurrPath(){
+  char cwd[MAXPATHLEN];
+  if(getcwd(cwd, sizeof(cwd)) == NULL){
+    fprintf(stderr, "Failed to getcwd\n");
+    return;
+  }
+  mvaddstr(0,0, "                              ");
+  mvaddstr(0,0, cwd);
+}
+
