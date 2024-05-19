@@ -6,10 +6,11 @@
 #include <sys/param.h>
 #include <unistd.h>
 #include <ncurses.h>
-
+#include <fcntl.h>
 typedef struct curr_node {
   int nf;
   int nh;
+  int fileflag;
   char *name;
   char **hiddens;
   char **child;
@@ -30,11 +31,14 @@ int compare_string(const void *a, const void *b);
 void draw_curr_level(int item);
 void draw_child_level(int item);
 void print_level(char** level, int num);
-void update_curr_level(void);
+void update_curr_level(int *p_index);
 
 char** con_ch_files(char *filename);
-char** con_pa_files(char *filename);
+char** con_pa_files(char *filename, int* p_index);
+
 int is_dir(char *filename);
+void draw_paren_level(int *p_index);
 
-void draw_paren_level(char *parent);
+void openTextEditor(char *filename);
 
+void showFileContents(char *filename);
