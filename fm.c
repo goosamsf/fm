@@ -18,56 +18,75 @@ int main(void){
   int menuitem = 0; 
   int p_index = 0;
   int key;
+  int cwdlen;
+  int horizontal;
   char cwd[MAXPATHLEN];
+  char local[MAXPATHLEN]= {0};
+  if(getcwd(cwd, sizeof(cwd)) == NULL){
+    fprintf(stderr, "Failed to get current working directory:87\n");
+    exit(EXIT_FAILURE);
+  }
+  char **htable;
+  marked_t *marking; 
+  marking = init_marked();
+  htable = init_htable();
+  /*
+  htableInsert("Hellow world", htable); 
+  htableInsert(cwd, htable); 
+  debugHtable(htable);
+  */
 
   update_curr_level(&p_index);
 
   initscr();
-  if((curr_win = newwin(LINES,COLS, 2, COLS/3)) == NULL){
+  start_color();
+  use_default_colors();
+  init_pair(1, COLOR_WHITE, COLOR_RED);
+  curs_set(0);
+  printf("%d, %d", (int)LINES, (int)COLS);
+  if((curr_win = newwin(LINES,COLS/9*2, 2, COLS/9*2+5)) == NULL){
     perror("newwin");
     exit(EXIT_FAILURE);
   }
-  if((paren_win = newwin(LINES,COLS, 2, 1)) == NULL){
+  if((paren_win = newwin(LINES,COLS/9*2, 2, 1)) == NULL){
     perror("newwin");
     exit(EXIT_FAILURE);
   }
-  if((child_win = newwin(LINES,COLS, 2,COLS - COLS/3)) == NULL){
+  if((child_win = newwin(LINES,COLS/9*5, 2,COLS/9*4 +10)) == NULL){
     perror("newwin");
     exit(EXIT_FAILURE);
   }
   scrollok(curr_win, TRUE);
-
-
   displayCurrPath();
   refresh();
   draw_paren_level(&p_index);
-  draw_curr_level(menuitem);
-  draw_child_level(0);
+  draw_child_level(0,cwd, htable);
+  draw_curr_level(menuitem,htable);
+  wrefresh(curr_win);
+  wrefresh(child_win);
   keypad(stdscr,TRUE);
   noecho();
   do {
     key = getch();
     switch(key){
       case 'j':
-        menuitem++;
-        if(menuitem > c_menumax-1) {
-          menuitem = 0;
+        if(menuitem == c_menumax-1){
+          break;
         }
+        menuitem++;
         break;
       case 'k':
-        menuitem--;
-        if(menuitem < 0) {
-          menuitem = c_menumax-1;
+        if(menuitem == 0){
+          break;
         }
+        menuitem--;
         break;
       case 'h':
         chdir("..");
         displayCurrPath();
         menuitem = p_index;
         update_curr_level(&p_index);
-        draw_paren_level(&p_index);
         break;
-
       case 'l':
         if(curr_level[menuitem].fileflag){
           endwin();
@@ -78,23 +97,50 @@ int main(void){
           displayCurrPath();
           menuitem = 0;
           update_curr_level(&p_index);
-          draw_paren_level(&p_index);
         }
         break;
-      default:
+      case 'y':
+        cwdlen = strlen(cwd);
+        strcat(local, cwd);
+        local[cwdlen] = '/';
+        cwdlen++;
+        strcat(local+cwdlen,curr_level[menuitem].name);
+        if(!htableLookup(local, htable)) {
+          updateMarking(marking,'y', local, htable);
+        }else{
+          int hashval = hash(local);
+          free(htable[hashval]);
+          htable[hashval] = NULL;
+          marking->num--;
+        }
+        memset(local, 0, MAXPATHLEN);
         break;
     }
-    draw_curr_level(menuitem);
-    draw_child_level(menuitem);
+    if(getcwd(cwd, sizeof(cwd)) == NULL){
+      fprintf(stderr, "Failed to get current working directory:87\n");
+      exit(EXIT_FAILURE);
+    }
+    draw_curr_level(menuitem, htable);
+    draw_child_level(menuitem,cwd, htable);
+    draw_paren_level(&p_index);
+    wrefresh(curr_win);
+    wrefresh(child_win);
+    //draw_curr_level(menuitem,htable);
+    //memset(cwd, 0, MAXPATHLEN);
   }while(key != 'q');
   echo();
   endwin();
-  
+ /*jj 
   if(getcwd(cwd, sizeof(cwd)) == NULL){
     fprintf(stderr, "Failed to get current working directory:87\n");
     exit(EXIT_FAILURE);
   }
+  */
   printf("%s\n",cwd);
+  readySrc(marking, htable);
+  debugMarking(marking);
+  printf("\n");
+  debugHtable(htable);
   return 0;
 }
 
@@ -297,11 +343,27 @@ char **con_pa_files(char * path, int *p_index){
 
 }
 
-void draw_child_level(int item){
+void draw_child_level(int item, char *cwd, char **htable){
+  werase(child_win);
   int i = 0, chmenu = 0;
   char **localchild = curr_level[item].child;
-  werase(child_win);
-  wrefresh(child_win);
+  int cwdlen;
+  //char cwd[MAXPATHLEN];
+  char newstr[MAXPATHLEN] = {0};
+  strcat(newstr, cwd);
+  cwdlen = strlen(newstr);
+  newstr[cwdlen] = '/';
+  strcat(newstr, curr_level[item].name);
+  cwdlen = strlen(newstr);
+  newstr[cwdlen] = '/';
+  cwdlen++;
+  /*
+  if(getcwd(cwd, sizeof(cwd)) == NULL){
+    fprintf(stderr, "Failed to get current working directory:87\n");
+    exit(EXIT_FAILURE);
+  }
+  */
+   
   if(c_menumax == 0){
     werase(child_win);
     wrefresh(child_win);
@@ -312,7 +374,8 @@ void draw_child_level(int item){
   }
   
   if(!localchild){
-    mvwaddstr(child_win, i, 0, "Empty");
+    mvwaddstr(child_win, 0, 0, "Empty");
+    
     wrefresh(child_win);
     return;
   }
@@ -320,40 +383,69 @@ void draw_child_level(int item){
   while(localchild[chmenu] != NULL){
     chmenu++;
   }
+  werase(child_win);
+  wrefresh(child_win);
   
   for(i = 0; i< chmenu; i++){
+    strcat(newstr,localchild[i]);
+  
     if(i == 0){
      wattron(child_win, A_REVERSE); 
     }
-    mvwaddstr(child_win, i, 0, localchild[i]);
+    mvwaddstr(child_win, i, 2, localchild[i]);
     wattroff(child_win,A_REVERSE);
+    if(htableLookup(newstr, htable)){
+     wattrset(child_win,COLOR_PAIR(1)| A_BOLD);
+     mvwaddstr(child_win, i, 0 ,"Y");
+     wrefresh(child_win);
+     wattroff(child_win, COLOR_PAIR(1) | A_BOLD);
+    }
+    memset(newstr+cwdlen,0, MAXPATHLEN-cwdlen);
   }
   wrefresh(child_win);
   //refresh();
 }
 
-void draw_curr_level(int item){
+void draw_curr_level(int item,  char** htable){
   int i=0;
+  int cwdlen;
+  char cwd[MAXPATHLEN];
+  char *newstr;
+  if(getcwd(cwd, sizeof(cwd)) == NULL){
+    fprintf(stderr, "Failed to get current working directory:87\n");
+    exit(EXIT_FAILURE);
+  }
+  cwd[strlen(cwd)] = '/';
+  cwdlen = strlen(cwd);
+   
   werase(curr_win);
   wrefresh(curr_win);
-  //print_level(curr_level, m_num_files);
-  //clear();
-  //addstr("Printing Current level's files");
-  //mvprintw(2, COLS/COLS, "%d", 0);
+
   for (i = 0; i < c_menumax; i++) {
+    newstr = strcat(cwd,curr_level[i].name);
     if(i == item) {
-      wattron(curr_win, A_REVERSE);
+      //wattron(curr_win, A_REVERSE);
+      wattron(curr_win, A_STANDOUT);
     }
-    mvwaddstr(curr_win, i, 0, curr_level[i].name);
-    wattroff(curr_win, A_REVERSE);
+    mvwaddstr(curr_win, i, 2, curr_level[i].name);
+    //wattroff(curr_win, A_REVERSE);
+    wattroff(curr_win, A_STANDOUT);
+    if(htableLookup(newstr, htable)){
+     wattrset(curr_win,COLOR_PAIR(1)| A_BOLD);
+     mvwaddstr(curr_win, i, 0/*COLS/9*2 -5*/ ,"Y");
+     wrefresh(curr_win);
+     wattroff(curr_win, COLOR_PAIR(1) | A_BOLD);
+    }
+    memset(cwd+cwdlen,0, strlen(curr_level[i].name));
   }
+
   if(c_menumax == 0){
-    wattron(curr_win, A_REVERSE);
+    wattron(curr_win, A_STANDOUT);
     mvwaddstr(curr_win, i, 0, "Empty ");
   }
   //mvwaddstr(curr_win,17,25, "Use jk keys to move; Enter to select");
-  wrefresh(curr_win);
-  refresh();
+  //wrefresh(curr_win);
+  //refresh();
 }
 
 void draw_paren_level(int *p_ind){
@@ -378,7 +470,7 @@ void draw_paren_level(int *p_ind){
     if(*p_ind == i){
       wattron(paren_win, A_REVERSE);
     }
-    mvwaddstr(paren_win, i, 0, curr_level[0].parent[i]);
+    mvwaddstr(paren_win, i, 1, curr_level[0].parent[i]);
     wattroff(paren_win, A_REVERSE);
   }
   wrefresh(paren_win);
@@ -455,24 +547,26 @@ void showFileContents(char *filename){
     fprintf(stderr, "Failed to open file\n ");
     exit(EXIT_FAILURE);
   }
-  char *buffer[2048];
+  char buffer[2048];
   ssize_t readbytes = read(fd, buffer, sizeof(buffer) - 1);
   if(readbytes == -1){
     fprintf(stderr, "Failed to read from file\n");
     exit(EXIT_FAILURE);
   }
+    
+  werase(child_win);
   mvwaddstr(child_win, 0, 0,buffer);
   wrefresh(child_win);
   close(fd);
 }
 
-void displayCurrPath(){
+void displayCurrPath(void){
   char cwd[MAXPATHLEN];
   if(getcwd(cwd, sizeof(cwd)) == NULL){
     fprintf(stderr, "Failed to getcwd\n");
     return;
   }
-  mvaddstr(0,0, "                              ");
+  mvaddstr(0,0, "                                                     ");
   mvaddstr(0,0, cwd);
 }
 

@@ -9,7 +9,7 @@ LIBS += $(NCURSES_LIBS)
 CFLAGS += $(NCURSES_CFLAGS)
 
 
-SRCS = fm.c
+SRCS = fm.c marking.c htable.c
 OBJS = $(SRCS: .c = .o)
 PROG = fm 
 
