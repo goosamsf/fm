@@ -19,7 +19,6 @@ int main(void){
   int p_index = 0;
   int key;
   int cwdlen;
-  int horizontal;
   char cwd[MAXPATHLEN];
   char local[MAXPATHLEN]= {0};
   if(getcwd(cwd, sizeof(cwd)) == NULL){
@@ -284,9 +283,10 @@ char **con_pa_files(char * path, int *p_index){
   int j = 0;
   char cwd[MAXPATHLEN];
   char *parentdir = NULL;
-  size_t slen;
-  char *filename = NULL;
-  
+
+  //int slen = 0;
+  char *filename;
+
   if (getcwd(cwd, sizeof(cwd)) == NULL) {
     //printf("Current directory is: %s\n", cwd);
     perror("getcwd");
@@ -298,14 +298,14 @@ char **con_pa_files(char * path, int *p_index){
     exit(EXIT_FAILURE);
   }
   parentdir++;  /* skip '/' */
-  slen = strlen(parentdir);
+
+  //slen = strlen(parentdir);
   
   if((dir = opendir(path)) == NULL){
     fprintf(stderr, "Failed to get opendir in con_pa_files\n");
     exit(EXIT_FAILURE);
   }
   char **pa_files = NULL;
-  //int num_files = get_num_files(filename);
   get_num_files(path, &nfiles);
   int num_files = nfiles.nf;
 
@@ -317,9 +317,7 @@ char **con_pa_files(char * path, int *p_index){
   while((entry = readdir(dir)) != NULL){
     filename = entry->d_name; 
     pa_files[i] = NULL;
-    //if(!strcmp(parentdir,filename)){
-    //  *p_index = i;
-   // }
+
     if(filename[0] != '.'){
       pa_files[i++] = strdup(filename);
     }
@@ -332,12 +330,7 @@ char **con_pa_files(char * path, int *p_index){
       *p_index = j; 
     }
   }
-  /*
-  printf("parent files : \n");
-  for (i = 0; i < num_files; i++){
-    printf("%s\n", pa_files[i]);
-  }
-  */
+
   closedir(dir);
   return pa_files;
 

@@ -1,6 +1,6 @@
 #include "fm.h"
 
-char **init_htable(){
+char **init_htable(void){
   char** htable = NULL;
   if((htable = malloc(sizeof(char*)*512)) == NULL){
     perror("malloc");
