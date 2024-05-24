@@ -1,5 +1,5 @@
 #include "fm.h"
-
+char* debug;
 marked_t *init_marked(void){
   marked_t * mark = NULL;
   if((mark = malloc(sizeof(marked_t))) == NULL){
@@ -45,10 +45,59 @@ void readySrc(marked_t *mark, char **htable){
 }
 
 void debugMarking(marked_t *mark){
-  printf("Command : %c\n", mark->command);
+  printf("Command : %c\n-", mark->command);
   printf("Number of src : %d\n", mark->num);
   printf("Src : %s\n", mark->src);
   printf("Dst : %s\n", mark->dst);
+}
+
+void executeCommand(marked_t *marking, char** htable){
+  char cwd[MAXPATHLEN];
+  if(getcwd(cwd, sizeof(cwd)) == NULL){
+    fprintf(stderr, "Failed to get current working directory:87\n");
+    exit(EXIT_FAILURE);
+  }
+  /* Access marked_t structure         */
+  /* - see what the holding command is  m-> mv, D-> rm, y->cp, 
+   * - set the destination
+   */
+  pid_t pid;
+  char *command;
+  strcat(marking->src, cwd);
+  switch(marking->command){
+    case 'y': 
+      command = "cp";
+      break; 
+    default:
+      break;
+  }
+  pid = fork();
+  if(pid == -1){
+    fprintf(stderr, "Failed to fork : openTextEditor\n");
+    return;
+  }else if(pid == 0){
+    int i,j = 0;
+    char *env[marking->num+3];   
+    char *dst = strndup(cwd, strlen(cwd));
+    
+    env[0] = "cp";
+    for(i = 1; i < marking->num+1; i++){
+      for(j; j < 512;j++){
+        if(htable[j]){
+          env[i] = htable[j++];
+          break;
+        }
+      }
+    }
+    env[marking->num+3-2] = dst;
+    env[marking->num+3-1] = NULL;
+
+    execvp(command, env);
+  }else{
+    wait(NULL);
+  }
+  
+
 }
 
 

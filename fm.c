@@ -6,19 +6,23 @@
 curr_node* curr_level;
 char ** child_level;
 char ** parent_level;
-//char *hi_parent;
 int c_menumax;
 int p_menumax;
 int ch_menumax;
+
+extern char*debug;
 WINDOW *curr_win;
 WINDOW *paren_win;
 WINDOW *child_win;
-
 int main(void){
   int menuitem = 0; 
   int p_index = 0;
   int key;
-  int cwdlen;
+
+  debug = malloc(512);
+  memset(debug, 0 ,512);
+
+  int cwdlen, hashval;
   char cwd[MAXPATHLEN];
   char local[MAXPATHLEN]= {0};
   if(getcwd(cwd, sizeof(cwd)) == NULL){
@@ -29,20 +33,17 @@ int main(void){
   marked_t *marking; 
   marking = init_marked();
   htable = init_htable();
-  /*
-  htableInsert("Hellow world", htable); 
-  htableInsert(cwd, htable); 
-  debugHtable(htable);
-  */
-
+  
+  /*Initialize before getting into main loop */
   update_curr_level(&p_index);
 
   initscr();
   start_color();
   use_default_colors();
-  init_pair(1, COLOR_WHITE, COLOR_RED);
-  curs_set(0);
-  printf("%d, %d", (int)LINES, (int)COLS);
+
+  init_pair(1, COLOR_WHITE, COLOR_RED); /*Initialize the color pair for mark */
+  curs_set(0); /* Disable cursor, hide it */
+
   if((curr_win = newwin(LINES,COLS/9*2, 2, COLS/9*2+5)) == NULL){
     perror("newwin");
     exit(EXIT_FAILURE);
@@ -55,6 +56,7 @@ int main(void){
     perror("newwin");
     exit(EXIT_FAILURE);
   }
+
   scrollok(curr_win, TRUE);
   displayCurrPath();
   refresh();
@@ -107,13 +109,17 @@ int main(void){
         if(!htableLookup(local, htable)) {
           updateMarking(marking,'y', local, htable);
         }else{
-          int hashval = hash(local);
+          hashval = hash(local);
           free(htable[hashval]);
           htable[hashval] = NULL;
           marking->num--;
         }
         memset(local, 0, MAXPATHLEN);
         break;
+
+      case 'p':
+        readySrc(marking, htable);
+        executeCommand(marking, htable );
     }
     if(getcwd(cwd, sizeof(cwd)) == NULL){
       fprintf(stderr, "Failed to get current working directory:87\n");
@@ -136,10 +142,14 @@ int main(void){
   }
   */
   printf("%s\n",cwd);
-  readySrc(marking, htable);
+  //readySrc(marking, htable);
   debugMarking(marking);
   printf("\n");
   debugHtable(htable);
+
+  printf("\n");
+  int i;
+  printf("%s",debug);
   return 0;
 }
 

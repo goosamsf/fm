@@ -15,7 +15,6 @@
 #include "marking.h"
 #include "htable.h"
 
-
 typedef struct curr_node {
   int nf;
   int nh;
