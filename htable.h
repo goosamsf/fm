@@ -1,4 +1,4 @@
-
+#define HTABLE_SIZE 512
 
 char **init_htable(void);
 unsigned int hash(char * s);

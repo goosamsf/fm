@@ -30,6 +30,7 @@ void htableClear(char** htable){
   for(i = 0; i< 512; i++){
     if(htable[i]){
       free(htable[i]);
+      htable[i] = NULL;
     }
   }
 }

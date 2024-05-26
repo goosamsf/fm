@@ -10,7 +10,6 @@ int c_menumax;
 int p_menumax;
 int ch_menumax;
 
-extern char*debug;
 WINDOW *curr_win;
 WINDOW *paren_win;
 WINDOW *child_win;
@@ -19,11 +18,9 @@ int main(void){
   int p_index = 0;
   int key;
 
-  debug = malloc(512);
-  memset(debug, 0 ,512);
-
   int cwdlen, hashval;
   char cwd[MAXPATHLEN];
+  char **env;
   char local[MAXPATHLEN]= {0};
   if(getcwd(cwd, sizeof(cwd)) == NULL){
     fprintf(stderr, "Failed to get current working directory:87\n");
@@ -42,6 +39,7 @@ int main(void){
   use_default_colors();
 
   init_pair(1, COLOR_WHITE, COLOR_RED); /*Initialize the color pair for mark */
+  init_pair(2, COLOR_WHITE, COLOR_BLUE); /*Initialize the color pair for mark */
   curs_set(0); /* Disable cursor, hide it */
 
   if((curr_win = newwin(LINES,COLS/9*2, 2, COLS/9*2+5)) == NULL){
@@ -62,7 +60,7 @@ int main(void){
   refresh();
   draw_paren_level(&p_index);
   draw_child_level(0,cwd, htable);
-  draw_curr_level(menuitem,htable);
+  draw_curr_level('i', menuitem,htable); // i for dummy character
   wrefresh(curr_win);
   wrefresh(child_win);
   keypad(stdscr,TRUE);
@@ -100,6 +98,7 @@ int main(void){
           update_curr_level(&p_index);
         }
         break;
+      case 'd':
       case 'y':
         cwdlen = strlen(cwd);
         strcat(local, cwd);
@@ -107,7 +106,7 @@ int main(void){
         cwdlen++;
         strcat(local+cwdlen,curr_level[menuitem].name);
         if(!htableLookup(local, htable)) {
-          updateMarking(marking,'y', local, htable);
+          updateMarking(marking,key, local, htable);
         }else{
           hashval = hash(local);
           free(htable[hashval]);
@@ -118,14 +117,16 @@ int main(void){
         break;
 
       case 'p':
-        readySrc(marking, htable);
-        executeCommand(marking, htable );
+        env = ready2fire(marking, htable);
+        executeCommand(marking, htable, env);
+        update_curr_level(&p_index);
+        break;
     }
     if(getcwd(cwd, sizeof(cwd)) == NULL){
       fprintf(stderr, "Failed to get current working directory:87\n");
       exit(EXIT_FAILURE);
     }
-    draw_curr_level(menuitem, htable);
+    draw_curr_level(key ,menuitem, htable);
     draw_child_level(menuitem,cwd, htable);
     draw_paren_level(&p_index);
     wrefresh(curr_win);
@@ -148,8 +149,6 @@ int main(void){
   debugHtable(htable);
 
   printf("\n");
-  int i;
-  printf("%s",debug);
   return 0;
 }
 
@@ -409,7 +408,7 @@ void draw_child_level(int item, char *cwd, char **htable){
   //refresh();
 }
 
-void draw_curr_level(int item,  char** htable){
+void draw_curr_level(char c, int item,  char** htable){
   int i=0;
   int cwdlen;
   char cwd[MAXPATHLEN];
@@ -434,13 +433,15 @@ void draw_curr_level(int item,  char** htable){
     //wattroff(curr_win, A_REVERSE);
     wattroff(curr_win, A_STANDOUT);
     if(htableLookup(newstr, htable)){
-     wattrset(curr_win,COLOR_PAIR(1)| A_BOLD);
-     mvwaddstr(curr_win, i, 0/*COLS/9*2 -5*/ ,"Y");
+     wattrset(curr_win,COLOR_PAIR(WHATPAIR(c))| A_BOLD);
+     mvwaddstr(curr_win, i, 0 ,"Y");
      wrefresh(curr_win);
-     wattroff(curr_win, COLOR_PAIR(1) | A_BOLD);
+     wattroff(curr_win,COLOR_PAIR(WHATPAIR(c))| A_BOLD);
+     //wattroff(curr_win, COLOR_PAIR(1) | A_BOLD);
     }
     memset(cwd+cwdlen,0, strlen(curr_level[i].name));
   }
+
 
   if(c_menumax == 0){
     wattron(curr_win, A_STANDOUT);

@@ -15,6 +15,11 @@
 #include "marking.h"
 #include "htable.h"
 
+#define WHATPAIR(c) \
+  ((c) == 'y' ? 1 : \
+   (c) == 'd' ? 2 : \
+   0)
+
 typedef struct curr_node {
   int nf;
   int nh;
@@ -37,7 +42,7 @@ void get_num_files(char* path, num_files_t *nf);
 void con_files(char *path);
 int compare_node(const void *a, const void *b);
 int compare_string(const void *a, const void *b);
-void draw_curr_level(int item, char **htable);
+void draw_curr_level(char c, int item, char **htable);
 void draw_child_level(int item, char * cwd, char **htable);
 void print_level(char** level, int num);
 void update_curr_level(int *p_index);
