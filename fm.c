@@ -9,14 +9,19 @@ char ** parent_level;
 int c_menumax;
 int p_menumax;
 int ch_menumax;
+unsigned char color_map[256] = {0};
+
 
 WINDOW *curr_win;
 WINDOW *paren_win;
 WINDOW *child_win;
+
+WINDOW *cp_button;
 int main(void){
   int menuitem = 0; 
   int p_index = 0;
   int key;
+  int ret;
 
   int cwdlen, hashval;
   char cwd[MAXPATHLEN];
@@ -30,37 +35,47 @@ int main(void){
   marked_t *marking; 
   marking = init_marked();
   htable = init_htable();
+  color_map['y'] = 1;
+  color_map['d'] = 2;
   
   /*Initialize before getting into main loop */
   update_curr_level(&p_index);
-
   initscr();
   start_color();
   use_default_colors();
 
   init_pair(1, COLOR_WHITE, COLOR_RED); /*Initialize the color pair for mark */
   init_pair(2, COLOR_WHITE, COLOR_BLUE); /*Initialize the color pair for mark */
+  
   curs_set(0); /* Disable cursor, hide it */
 
-  if((curr_win = newwin(LINES,COLS/9*2, 2, COLS/9*2+5)) == NULL){
+  if((curr_win = newwin(LINES-5,COLS/9*2+5, 2, COLS/9*2+5)) == NULL){
     perror("newwin");
     exit(EXIT_FAILURE);
   }
-  if((paren_win = newwin(LINES,COLS/9*2, 2, 1)) == NULL){
+  if((paren_win = newwin(LINES-5,COLS/9*2, 2, 1)) == NULL){
     perror("newwin");
     exit(EXIT_FAILURE);
   }
-  if((child_win = newwin(LINES,COLS/9*5, 2,COLS/9*4 +10)) == NULL){
+  if((child_win = newwin(LINES-5,COLS/9*5, 2,COLS/9*4 +10)) == NULL){
     perror("newwin");
     exit(EXIT_FAILURE);
   }
+  if((cp_button = newwin(1,5, LINES-2, 1)) == NULL){
+    perror("newwin");
+    exit(EXIT_FAILURE);
+  }
+  
+  mvwaddstr(cp_button, 0, 0, "COPY");
 
+
+  refresh();
   scrollok(curr_win, TRUE);
   displayCurrPath();
-  refresh();
   draw_paren_level(&p_index);
-  draw_child_level(0,cwd, htable);
-  draw_curr_level('i', menuitem,htable); // i for dummy character
+  draw_child_level('i', menuitem, cwd, htable, marking);
+  draw_curr_level('i', menuitem,htable, marking); // i for dummy character
+  wrefresh(cp_button);
   wrefresh(curr_win);
   wrefresh(child_win);
   keypad(stdscr,TRUE);
@@ -105,7 +120,7 @@ int main(void){
         local[cwdlen] = '/';
         cwdlen++;
         strcat(local+cwdlen,curr_level[menuitem].name);
-        if(!htableLookup(local, htable)) {
+        if(!htableLookup(local, htable) || key != marking->command ) {
           updateMarking(marking,key, local, htable);
         }else{
           hashval = hash(local);
@@ -115,10 +130,23 @@ int main(void){
         }
         memset(local, 0, MAXPATHLEN);
         break;
-
+      case 'D':
+        ht2marking(marking ,htable);
+        if((ret = deletePrompt(marking)) == 0){
+          deleteAll(marking, htable);
+          update_curr_level(&p_index);
+        }
+        freeResources(marking, htable);
+        menuitem = 0;
+        break;
       case 'p':
         env = ready2fire(marking, htable);
         executeCommand(marking, htable, env);
+        update_curr_level(&p_index);
+        freeResources(marking, htable);
+        break;
+      case 'r':
+        renameHandler(curr_level[menuitem].name);
         update_curr_level(&p_index);
         break;
     }
@@ -126,8 +154,8 @@ int main(void){
       fprintf(stderr, "Failed to get current working directory:87\n");
       exit(EXIT_FAILURE);
     }
-    draw_curr_level(key ,menuitem, htable);
-    draw_child_level(menuitem,cwd, htable);
+    draw_curr_level(key ,menuitem, htable, marking);
+    draw_child_level(key,menuitem,cwd, htable, marking);
     draw_paren_level(&p_index);
     wrefresh(curr_win);
     wrefresh(child_win);
@@ -136,14 +164,7 @@ int main(void){
   }while(key != 'q');
   echo();
   endwin();
- /*jj 
-  if(getcwd(cwd, sizeof(cwd)) == NULL){
-    fprintf(stderr, "Failed to get current working directory:87\n");
-    exit(EXIT_FAILURE);
-  }
-  */
   printf("%s\n",cwd);
-  //readySrc(marking, htable);
   debugMarking(marking);
   printf("\n");
   debugHtable(htable);
@@ -151,6 +172,83 @@ int main(void){
   printf("\n");
   return 0;
 }
+
+
+int deletePrompt(marked_t *marking){
+  WINDOW *prompt;
+  int key;
+  int i = 0;
+  int j;
+  int sub_h = LINES/3 + marking->num;
+  int sub_w = COLS/3;
+  int sub_y = LINES/4;
+  int sub_x = COLS/3;
+   
+  if((prompt= newwin(sub_h, sub_w, sub_y, sub_x)) == NULL){
+    perror("newwin");
+    exit(EXIT_FAILURE);
+  }
+  box(prompt, 0,0);
+  mvwprintw(prompt, 1, 1, "Deleting Following %d Files?", marking->num);
+  
+  for(j = 0; j < marking->num; j++){
+    mvwprintw(prompt, j + 3, 2 , "%s",marking->src[j]);
+  }
+  
+  wattron(prompt, A_STANDOUT);
+  mvwprintw(prompt, sub_h -2, sub_w/2 -8, "YES");
+  wattroff(prompt, A_STANDOUT);
+  mvwprintw(prompt, sub_h -2, sub_w/2 +8, "NO");
+  wrefresh(prompt);
+  do {
+    key = getch();
+    switch (key){
+      case 'h' :
+        i = 0;
+        break;
+      case 'l' :
+        i = 1;
+        break;
+    }
+    wrefresh(prompt);
+    draw_menu_item(i, prompt, sub_h,sub_w, sub_y, sub_x);
+  } while(key != '\n');
+  delwin(prompt);
+  return i;
+  //erase();
+}
+
+void ht2marking(marked_t *marking, char**htable){
+  int i = 0; 
+  int j = 0;
+  while(j < 512){
+    if(htable[j]){
+      marking->src[i++] = htable[j];
+    }
+    j++;
+  }
+
+}
+
+
+void draw_menu_item(int i, WINDOW *prompt, int sub_h, int sub_w, int sub_y, int sub_x){
+  mvwprintw(prompt, sub_h-2, sub_w/2 -8, "   ");
+  mvwprintw(prompt, sub_h-2, sub_w/2 +8, "  ");
+  
+  if(i == 0){
+    wattron(prompt, A_STANDOUT);
+    mvwprintw(prompt, sub_h-2, sub_w/2 -8, "YES");
+    wattroff(prompt, A_STANDOUT);
+    mvwprintw(prompt, sub_h-2, sub_w/2 +8, "NO");
+  }else{
+    wattron(prompt, A_STANDOUT);
+    mvwprintw(prompt, sub_h-2, sub_w/2 +8, "NO");
+    wattroff(prompt, A_STANDOUT);
+    mvwprintw(prompt, sub_h-2, sub_w/2 -8, "YES");
+  }
+  wrefresh(prompt);
+}
+
 
 void openTextEditor(char *filename){
   char cwd[MAXPATHLEN];
@@ -345,7 +443,7 @@ char **con_pa_files(char * path, int *p_index){
 
 }
 
-void draw_child_level(int item, char *cwd, char **htable){
+void draw_child_level(char c, int item, char *cwd, char **htable, marked_t *marking){
   werase(child_win);
   int i = 0, chmenu = 0;
   char **localchild = curr_level[item].child;
@@ -397,10 +495,12 @@ void draw_child_level(int item, char *cwd, char **htable){
     mvwaddstr(child_win, i, 2, localchild[i]);
     wattroff(child_win,A_REVERSE);
     if(htableLookup(newstr, htable)){
-     wattrset(child_win,COLOR_PAIR(1)| A_BOLD);
-     mvwaddstr(child_win, i, 0 ,"Y");
+     //wattrset(child_win,COLOR_PAIR(1)| A_BOLD);
+     wattrset(child_win,COLOR_PAIR(WHATPAIR(c, marking))| A_BOLD);
+     mvwaddstr(child_win, i, 0 ,"-");
      wrefresh(child_win);
-     wattroff(child_win, COLOR_PAIR(1) | A_BOLD);
+     //wattroff(child_win, COLOR_PAIR(1) | A_BOLD);
+     wattroff(child_win,COLOR_PAIR(WHATPAIR(c, marking))| A_BOLD);
     }
     memset(newstr+cwdlen,0, MAXPATHLEN-cwdlen);
   }
@@ -408,7 +508,7 @@ void draw_child_level(int item, char *cwd, char **htable){
   //refresh();
 }
 
-void draw_curr_level(char c, int item,  char** htable){
+void draw_curr_level(char c, int item,  char** htable, marked_t *marking){
   int i=0;
   int cwdlen;
   char cwd[MAXPATHLEN];
@@ -422,6 +522,9 @@ void draw_curr_level(char c, int item,  char** htable){
    
   werase(curr_win);
   wrefresh(curr_win);
+  if(marking->command != c){
+    
+  }
 
   for (i = 0; i < c_menumax; i++) {
     newstr = strcat(cwd,curr_level[i].name);
@@ -433,10 +536,10 @@ void draw_curr_level(char c, int item,  char** htable){
     //wattroff(curr_win, A_REVERSE);
     wattroff(curr_win, A_STANDOUT);
     if(htableLookup(newstr, htable)){
-     wattrset(curr_win,COLOR_PAIR(WHATPAIR(c))| A_BOLD);
-     mvwaddstr(curr_win, i, 0 ,"Y");
+     wattrset(curr_win,COLOR_PAIR(WHATPAIR(c, marking))| A_BOLD);
+     mvwaddstr(curr_win, i, 0 ,"-");
      wrefresh(curr_win);
-     wattroff(curr_win,COLOR_PAIR(WHATPAIR(c))| A_BOLD);
+     wattroff(curr_win,COLOR_PAIR(WHATPAIR(c, marking))| A_BOLD);
      //wattroff(curr_win, COLOR_PAIR(1) | A_BOLD);
     }
     memset(cwd+cwdlen,0, strlen(curr_level[i].name));

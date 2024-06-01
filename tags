@@ -62,7 +62,7 @@
 !_TAG_PARSER_VERSION!XML	0.0	/current.age/
 !_TAG_PARSER_VERSION!Yaml	0.0	/current.age/
 !_TAG_PATTERN_LENGTH_LIMIT	96	/0 for no limit/
-!_TAG_PROC_CWD	/Users/jun/school/sp/	//
+!_TAG_PROC_CWD	/Users/jun/fm/	//
 !_TAG_PROGRAM_AUTHOR	Universal Ctags Team	//
 !_TAG_PROGRAM_NAME	Universal Ctags	/Derived from Exuberant Ctags/
 !_TAG_PROGRAM_URL	https://ctags.io/	/official site/
@@ -89,15 +89,16 @@ CFBundleShortVersionString	fm.dSYM/Contents/Info.plist	/^		<key>CFBundleShortVer
 CFBundleSignature	fm.dSYM/Contents/Info.plist	/^		<key>CFBundleSignature<\/key>$/;"	k
 CFBundleVersion	fm.dSYM/Contents/Info.plist	/^		<key>CFBundleVersion<\/key>$/;"	k
 DEFAULT_DST_LEN	marking.h	/^#define DEFAULT_DST_LEN /;"	d
+DEFAULT_NUM_SRC	marking.h	/^#define DEFAULT_NUM_SRC /;"	d
 DEFAULT_SRC_LEN	marking.h	/^#define DEFAULT_SRC_LEN /;"	d
 FM_H	fm.h	/^#define FM_H$/;"	d
+HTABLE_SIZE	htable.h	/^#define HTABLE_SIZE /;"	d
 NCURSES_CFLAGS	Makefile	/^NCURSES_CFLAGS = `pkg-config --cflags ncursesw`$/;"	m
 NCURSES_LIBS	Makefile	/^NCURSES_LIBS =  `pkg-config --libs ncursesw`$/;"	m
 OBJS	Makefile	/^OBJS = $(SRCS: .c = .o)$/;"	m
 PROG	Makefile	/^PROG = fm $/;"	m
 SRCS	Makefile	/^SRCS = fm.c marking.c htable.c$/;"	m
-Wed Apr  3 19:06:32 PDT 2024	REPORT.md	/^### Wed Apr  3 19:06:32 PDT 2024$/;"	S
-Wed Apr 10 16:18:09 PDT 2024	REPORT.md	/^### Wed Apr 10 16:18:09 PDT 2024$/;"	S
+WHATPAIR	fm.h	/^#define WHATPAIR(/;"	d
 all	Makefile	/^all: $(OJBS) $/;"	t
 c_menumax	fm.c	/^int c_menumax;$/;"	v	typeref:typename:int
 ch_menumax	fm.c	/^int ch_menumax;$/;"	v	typeref:typename:int
@@ -105,27 +106,35 @@ child	fm.h	/^  char **child;$/;"	m	struct:curr_node	typeref:typename:char **
 child_level	fm.c	/^char ** child_level;$/;"	v	typeref:typename:char **
 child_win	fm.c	/^WINDOW *child_win;$/;"	v	typeref:typename:WINDOW *
 clean	Makefile	/^clean:$/;"	t
+color_map	fm.c	/^unsigned char color_map[256] = {0};$/;"	v	typeref:typename:unsigned char[256]
 command	marking.h	/^  char command;$/;"	m	struct:marked_t	typeref:typename:char
 compare_node	fm.c	/^int compare_node(const void *a, const void *b){$/;"	f	typeref:typename:int
 compare_string	fm.c	/^int compare_string(const void *a, const void *b){$/;"	f	typeref:typename:int
 con_ch_files	fm.c	/^char **con_ch_files(char *path){$/;"	f	typeref:typename:char **
 con_files	fm.c	/^void con_files(char *path){$/;"	f	typeref:typename:void
 con_pa_files	fm.c	/^char **con_pa_files(char * path, int *p_index){$/;"	f	typeref:typename:char **
+cp_button	fm.c	/^WINDOW *cp_button;$/;"	v	typeref:typename:WINDOW *
 curr_level	fm.c	/^curr_node* curr_level;$/;"	v	typeref:typename:curr_node *
 curr_node	fm.h	/^typedef struct curr_node {$/;"	s
 curr_node	fm.h	/^} curr_node;$/;"	t	typeref:struct:curr_node
 curr_win	fm.c	/^WINDOW *curr_win;$/;"	v	typeref:typename:WINDOW *
 debugHtable	htable.c	/^void debugHtable(char** ht){$/;"	f	typeref:typename:void
 debugMarking	marking.c	/^void debugMarking(marked_t *mark){$/;"	f	typeref:typename:void
+deleteAll	marking.c	/^void deleteAll(marked_t *marking, char** htable){$/;"	f	typeref:typename:void
+deletePrompt	fm.c	/^int deletePrompt(marked_t *marking){$/;"	f	typeref:typename:int
 displayCurrPath	fm.c	/^void displayCurrPath(void){$/;"	f	typeref:typename:void
-draw_child_level	fm.c	/^void draw_child_level(int item, char *cwd, char **htable){$/;"	f	typeref:typename:void
-draw_curr_level	fm.c	/^void draw_curr_level(int item,  char** htable){$/;"	f	typeref:typename:void
+draw_child_level	fm.c	/^void draw_child_level(char c, int item, char *cwd, char **htable, marked_t *marking){$/;"	f	typeref:typename:void
+draw_curr_level	fm.c	/^void draw_curr_level(char c, int item,  char** htable, marked_t *marking){$/;"	f	typeref:typename:void
+draw_menu_item	fm.c	/^void draw_menu_item(int i, WINDOW *prompt, int sub_h, int sub_w, int sub_y, int sub_x){$/;"	f	typeref:typename:void
 draw_paren_level	fm.c	/^void draw_paren_level(int *p_ind){$/;"	f	typeref:typename:void
 dst	marking.h	/^  char* dst;$/;"	m	struct:marked_t	typeref:typename:char *
+executeCommand	marking.c	/^void executeCommand(marked_t *marking, char** htable, char**env){$/;"	f	typeref:typename:void
 fileflag	fm.h	/^  int fileflag;$/;"	m	struct:curr_node	typeref:typename:int
+freeResources	marking.c	/^void freeResources(marked_t *marking, char** htable){$/;"	f	typeref:typename:void
 get_num_files	fm.c	/^void get_num_files(char * path, num_files_t *numfiles){$/;"	f	typeref:typename:void
 hash	htable.c	/^unsigned int hash(char * s){$/;"	f	typeref:typename:unsigned int
 hiddens	fm.h	/^  char **hiddens;$/;"	m	struct:curr_node	typeref:typename:char **
+ht2marking	fm.c	/^void ht2marking(marked_t *marking, char**htable){$/;"	f	typeref:typename:void
 htableClear	htable.c	/^void htableClear(char** htable){$/;"	f	typeref:typename:void
 htableInsert	htable.c	/^void htableInsert(char * s, char**htable){$/;"	f	typeref:typename:void
 htableLookup	htable.c	/^int htableLookup(char *s, char**htable){$/;"	f	typeref:typename:int
@@ -133,7 +142,6 @@ init_htable	htable.c	/^char **init_htable(void){$/;"	f	typeref:typename:char **
 init_marked	marking.c	/^marked_t *init_marked(void){$/;"	f	typeref:typename:marked_t *
 is_dir	fm.c	/^int is_dir(char *filename){$/;"	f	typeref:typename:int
 main	fm.c	/^int main(void){$/;"	f	typeref:typename:int
-main	test/test.c	/^int main (){$/;"	f	typeref:typename:int
 marked_t	marking.h	/^typedef struct marked_t{$/;"	s
 marked_t	marking.h	/^} marked_t;$/;"	t	typeref:struct:marked_t
 name	fm.h	/^  char *name;$/;"	m	struct:curr_node	typeref:typename:char *
@@ -150,8 +158,8 @@ paren_win	fm.c	/^WINDOW *paren_win;$/;"	v	typeref:typename:WINDOW *
 parent	fm.h	/^  char **parent;$/;"	m	struct:curr_node	typeref:typename:char **
 parent_level	fm.c	/^char ** parent_level;$/;"	v	typeref:typename:char **
 print_level	fm.c	/^void print_level(char** level, int num){$/;"	f	typeref:typename:void
-readySrc	marking.c	/^void readySrc(marked_t *mark, char **htable){$/;"	f	typeref:typename:void
+ready2fire	marking.c	/^char **ready2fire(marked_t *mark, char **htable){$/;"	f	typeref:typename:char **
 showFileContents	fm.c	/^void showFileContents(char *filename){$/;"	f	typeref:typename:void
-src	marking.h	/^  char* src;$/;"	m	struct:marked_t	typeref:typename:char *
+src	marking.h	/^  char* src[DEFAULT_NUM_SRC];$/;"	m	struct:marked_t	typeref:typename:char * []
 updateMarking	marking.c	/^void updateMarking(marked_t *mark, char newcommand, char *cwd, char **htable){$/;"	f	typeref:typename:void
 update_curr_level	fm.c	/^void update_curr_level(int *p_index){$/;"	f	typeref:typename:void

@@ -24,10 +24,16 @@ marked_t *init_marked(void){
   return mark;
 }
 
+void freeResources(marked_t *marking, char** htable){
+  memset(marking, 0, sizeof(marked_t));
+  htableClear(htable);
+}
+
 void updateMarking(marked_t *mark, char newcommand, char *cwd, char **htable){
   if(mark->command != newcommand){
     mark->command = newcommand;
     htableClear(htable);
+    mark->num = 0;
   } 
   htableInsert(cwd, htable);
   mark->num++;  
@@ -35,29 +41,36 @@ void updateMarking(marked_t *mark, char newcommand, char *cwd, char **htable){
 
 char **ready2fire(marked_t *mark, char **htable){
   uint16_t i,j =0;
-  uint8_t k = 2 + (mark->command == 'y' || mark->command == 'x');
+  uint8_t k = 2; 
+  if(mark->command == 'y'){
+    k +=2;
+  }else {
+    k++;
+  }
   char **ret = NULL;
 
   if((ret = malloc(sizeof(char*)*mark->num+k)) == NULL){
     perror("malloc");
-    exit(EXIT_FAILURE);
+    exit(EXIT_FAILURE); 
   }
   /* ENV must be NULL terminated */
   ret[mark->num+k-1] = NULL;
   switch(mark->command){
     case 'y':
-      ret[0] = "cp";
+      ret[j++] = "cp";
+      ret[j++] = "-r";
       break;
     case 'x':
-      ret[0] = "mv";
+      ret[j++] = "mv";
       break;
     case 'r':
-      ret[0] = "mv";
+      ret[j++] = "mv";
     case 'd':
-      ret[0] = "rm";
+      ret[j++] = "mv";
     default:
       //print error message:
   }
+
   for(i = 0; i < HTABLE_SIZE; i++){
     if(htable[i]){
       ret[j++] = htable[i];
@@ -73,46 +86,61 @@ void debugMarking(marked_t *mark){
   printf("Dst : %s\n", mark->dst);
 }
 
+void deleteAll(marked_t *marking, char** htable){
+  pid_t pid;
+  int i;
+  int j = 0;
+  char *env[64];
+  //if((env = malloc(sizeof(char*)*mark->num+3)) == NULL){
+  //  perror("malloc");
+  //  exit(EXIT_FAILURE);
+  // }
+  env[0] = "rm";
+  env[1] = "-rf";
+  for(i =2; i < 64 && marking->src[j] != NULL; i++){
+    env[i] = marking->src[j++];
+  }
+  env[i] = NULL;
+  pid = fork(); 
+  if(pid == -1){
+
+  }else if(pid == 0){
+    execvp("rm",env);
+  }else{
+    wait(NULL);
+  }
+
+}
+
+
+
 void executeCommand(marked_t *marking, char** htable, char**env){
   char cwd[MAXPATHLEN];
   if(getcwd(cwd, sizeof(cwd)) == NULL){
     fprintf(stderr, "Failed to get current working directory:87\n");
     exit(EXIT_FAILURE);
   }
+  uint8_t k = 2;
+  if(marking->command == 'y'){
+    k +=2;
+  }else {
+    k++;
+  }
   /* Access marked_t structure         */
   /* - see what the holding command is  m-> mv, D-> rm, y->cp, 
    * - set the destination
    */
   pid_t pid;
-  char *command;
-  switch(marking->command){
-    case 'y': 
-      command = "cp";
-      break; 
-    default:
-      break;
-  }
+  char command[8];
+  strcpy(command, env[0]); 
+  env[marking->num+k-2] = cwd;
+  env[marking->num+k-1] = NULL;
+
   pid = fork();
   if(pid == -1){
     fprintf(stderr, "Failed to fork : openTextEditor\n");
     return;
   }else if(pid == 0){
-    int i,j = 0;
-    char *env[marking->num+3];   
-    char *dst = strndup(cwd, strlen(cwd));
-    
-    env[0] = "cp";
-    for(i = 1; i < marking->num+1; i++){
-      for(; j < 512;j++){
-        if(htable[j]){
-          env[i] = htable[j++];
-          break;
-        }
-      }
-    }
-    env[marking->num+3-2] = dst;
-    env[marking->num+3-1] = NULL;
-
     execvp(command, env);
   }else{
     wait(NULL);

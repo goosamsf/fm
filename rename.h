@@ -1,0 +1,2 @@
+
+void renameHandler(char *pwd);

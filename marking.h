@@ -14,3 +14,7 @@ void debugMarking(marked_t *mark);
 void updateMarking(marked_t *mark, char newcommand, char *cwd, char** htable);
 char** ready2fire(marked_t *mark, char **htable);
 void executeCommand(marked_t *marking, char** htable, char**env);
+
+void deleteAll(marked_t *marking, char** htable);
+
+void freeResources(marked_t *marking, char** htable);
