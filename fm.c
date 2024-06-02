@@ -532,7 +532,8 @@ void draw_curr_level(char c, int item,  char** htable, marked_t *marking){
       //wattron(curr_win, A_REVERSE);
       wattron(curr_win, A_STANDOUT);
     }
-    mvwaddstr(curr_win, i, 2, curr_level[i].name);
+    //mvwaddstr(curr_win, i, 2, curr_level[i].name);
+    mvwaddnstr(curr_win, i, 2, curr_level[i].name,COLS/9*2);
     //wattroff(curr_win, A_REVERSE);
     wattroff(curr_win, A_STANDOUT);
     if(htableLookup(newstr, htable)){
