@@ -60,4 +60,5 @@ void showFileContents(char *filename);
 void draw_menu_item(int i, WINDOW *prompt, int sub_h, int sub_w, int sub_y, int sub_x);
 int deletePrompt(marked_t *marking);
 void ht2marking(marked_t *marking, char**htable);
+void cdHandler(char* cwd, char* path);
 #endif

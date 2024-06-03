@@ -17,7 +17,11 @@ WINDOW *paren_win;
 WINDOW *child_win;
 
 WINDOW *cp_button;
-int main(void){
+int main(int argc, char* argv[]){
+  int cdflag = 0;
+  if(!(strcmp(argv[1], "cd"))){
+    cdflag = 1;
+  }
   int menuitem = 0; 
   int p_index = 0;
   int key;
@@ -159,20 +163,22 @@ int main(void){
     draw_paren_level(&p_index);
     wrefresh(curr_win);
     wrefresh(child_win);
-    //draw_curr_level(menuitem,htable);
-    //memset(cwd, 0, MAXPATHLEN);
   }while(key != 'q');
   echo();
   endwin();
+  if(cdflag){
+    cdHandler(cwd, argv[2]);
+  }
   printf("%s\n",cwd);
-  debugMarking(marking);
-  printf("\n");
-  debugHtable(htable);
-
-  printf("\n");
   return 0;
 }
 
+void cdHandler(char* cwd, char* path){
+  FILE *fp;
+  fp = fopen(path, "w");
+  fprintf(fp, "%s",cwd);
+  fclose(fp);
+}
 
 int deletePrompt(marked_t *marking){
   WINDOW *prompt;
