@@ -42,12 +42,12 @@ void updateMarking(marked_t *mark, char newcommand, char *cwd, char **htable){
 char **ready2fire(marked_t *mark, char **htable){
   uint16_t i,j =0;
   uint8_t k = 2; 
+  char **ret = NULL;
   if(mark->command == 'y'){
     k +=2;
   }else {
     k++;
   }
-  char **ret = NULL;
 
   if((ret = malloc(sizeof(char*)*mark->num+k)) == NULL){
     perror("malloc");
@@ -65,10 +65,12 @@ char **ready2fire(marked_t *mark, char **htable){
       break;
     case 'r':
       ret[j++] = "mv";
+			break;
     case 'd':
       ret[j++] = "mv";
+			break;
     default:
-      //print error message:
+			break;
   }
 
   for(i = 0; i < HTABLE_SIZE; i++){
@@ -80,10 +82,12 @@ char **ready2fire(marked_t *mark, char **htable){
 }
 
 void debugMarking(marked_t *mark){
+	/*
   printf("Command : %c\n-", mark->command);
   printf("Number of src : %d\n", mark->num);
   printf("Src : %s\n", mark->src);
   printf("Dst : %s\n", mark->dst);
+	*/
 }
 
 void deleteAll(marked_t *marking, char** htable){
@@ -91,10 +95,6 @@ void deleteAll(marked_t *marking, char** htable){
   int i;
   int j = 0;
   char *env[64];
-  //if((env = malloc(sizeof(char*)*mark->num+3)) == NULL){
-  //  perror("malloc");
-  //  exit(EXIT_FAILURE);
-  // }
   env[0] = "rm";
   env[1] = "-rf";
   for(i =2; i < 64 && marking->src[j] != NULL; i++){
@@ -116,11 +116,13 @@ void deleteAll(marked_t *marking, char** htable){
 
 void executeCommand(marked_t *marking, char** htable, char**env){
   char cwd[MAXPATHLEN];
+  uint8_t k = 2;
+  pid_t pid;
+  char command[8];
   if(getcwd(cwd, sizeof(cwd)) == NULL){
     fprintf(stderr, "Failed to get current working directory:87\n");
     exit(EXIT_FAILURE);
   }
-  uint8_t k = 2;
   if(marking->command == 'y'){
     k +=2;
   }else {
@@ -130,8 +132,6 @@ void executeCommand(marked_t *marking, char** htable, char**env){
   /* - see what the holding command is  m-> mv, D-> rm, y->cp, 
    * - set the destination
    */
-  pid_t pid;
-  char command[8];
   strcpy(command, env[0]); 
   env[marking->num+k-2] = cwd;
   env[marking->num+k-1] = NULL;

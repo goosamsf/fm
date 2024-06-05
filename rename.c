@@ -10,13 +10,13 @@ wrefresh(win);
    */
   WINDOW *prompt;
   pid_t pid;
-  echo();
   char *env[4];
   char tempstr[64];
   int sub_h = LINES/3 - 7;
   int sub_w = COLS/3;
   int sub_y = LINES/4;
   int sub_x = COLS/3;
+  echo();
   if((prompt= newwin(sub_h, sub_w, sub_y, sub_x)) == NULL){
     perror("newwin");
     exit(EXIT_FAILURE);

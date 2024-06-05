@@ -47,7 +47,8 @@ int htableLookup(char *s, char**htable){
 }
 
 void debugHtable(char** ht){
-  for(int i = 0; i< 512; i++){
+	int i;
+  for(i = 0; i< 512; i++){
     if(ht[i]){
       printf("%d,-%s-\n", i, ht[i]);
     }

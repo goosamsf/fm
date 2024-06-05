@@ -18,25 +18,24 @@ WINDOW *child_win;
 
 WINDOW *cp_button;
 int main(int argc, char* argv[]){
-  int cdflag = 0;
-  if(!(strcmp(argv[1], "cd"))){
-    cdflag = 1;
-  }
-  int menuitem = 0; 
-  int p_index = 0;
-  int key;
-  int ret;
-
+  int cdflag;
   int cwdlen, hashval;
   char cwd[MAXPATHLEN];
   char **env;
   char local[MAXPATHLEN]= {0};
+  char **htable;
+	int menuitem,p_index, key, ret;
+  marked_t *marking; 
+	menuitem = 0;
+	p_index = 0;
+	cdflag = 0;
+  if(argc > 1 && !(strcmp(argv[1], "cd"))){
+    cdflag = 1;
+  }
   if(getcwd(cwd, sizeof(cwd)) == NULL){
     fprintf(stderr, "Failed to get current working directory:87\n");
     exit(EXIT_FAILURE);
   }
-  char **htable;
-  marked_t *marking; 
   marking = init_marked();
   htable = init_htable();
   color_map['y'] = 1;
@@ -78,7 +77,7 @@ int main(int argc, char* argv[]){
   displayCurrPath();
   draw_paren_level(&p_index);
   draw_child_level('i', menuitem, cwd, htable, marking);
-  draw_curr_level('i', menuitem,htable, marking); // i for dummy character
+  draw_curr_level('i', menuitem,htable, marking); 
   wrefresh(cp_button);
   wrefresh(curr_win);
   wrefresh(child_win);
@@ -221,7 +220,6 @@ int deletePrompt(marked_t *marking){
   } while(key != '\n');
   delwin(prompt);
   return i;
-  //erase();
 }
 
 void ht2marking(marked_t *marking, char**htable){
@@ -287,11 +285,12 @@ void update_curr_level(int *p_index){
    * get the number of files in current directory
    *
    */
+  int num_files;
   num_files_t nfiles;
   get_num_files(".", &nfiles);
-  int num_files = nfiles.nf;
-  
+  num_files = nfiles.nf;
   c_menumax = num_files;
+
   if(curr_level){
     free(curr_level);
   }
@@ -324,18 +323,14 @@ void con_files(char *path){
     fprintf(stderr, "Failed to get opendinr in get_num_files\n");
     return;
   }
-  //curr[0].parent = con_pa_files("..");
   while((entry =readdir(dir)) != NULL){
     filename = entry->d_name;
     if(filename[0] == '.'){
-    //if filename begins with dot
 
     }else{
-      //regular file 
       curr[i].name = strdup(filename);
       curr[i].child = NULL;
       if(is_dir(filename)){
-        //If this directory get child directory
         curr[i].child = con_ch_files(filename);
         curr[i].fileflag = 0;
       }else{
@@ -369,13 +364,14 @@ char **con_ch_files(char *path){
   } 
 
   if((dir = opendir(path)) == NULL){
-    printf("tryiing to open filename : %s\n",path);
+		if(errno == EACCES){
+			return NULL;
+		}
     fprintf(stderr, "Failed to get opendir in con_ch_files\n");
-    return NULL;
     exit(EXIT_FAILURE);
   }
+
   
-  //int num_files = get_num_files(filename);
   while((entry = readdir(dir)) != NULL){
     filename = entry->d_name;
     if(filename[0] != '.'){
@@ -392,16 +388,17 @@ char **con_pa_files(char * path, int *p_index){
   DIR *dir;
   struct dirent *entry;
   num_files_t nfiles;
-  int i = 0;
-  int j = 0;
+  int i;
+  int j;
+	int num_files;
   char cwd[MAXPATHLEN];
   char *parentdir = NULL;
-
-  //int slen = 0;
   char *filename;
+	char **pa_files;
+	i = 0;
+	j = 0;
 
   if (getcwd(cwd, sizeof(cwd)) == NULL) {
-    //printf("Current directory is: %s\n", cwd);
     perror("getcwd");
     exit(EXIT_FAILURE);
   }
@@ -412,15 +409,15 @@ char **con_pa_files(char * path, int *p_index){
   }
   parentdir++;  /* skip '/' */
 
-  //slen = strlen(parentdir);
   
   if((dir = opendir(path)) == NULL){
     fprintf(stderr, "Failed to get opendir in con_pa_files\n");
     exit(EXIT_FAILURE);
   }
-  char **pa_files = NULL;
+	
+  pa_files = NULL;
   get_num_files(path, &nfiles);
-  int num_files = nfiles.nf;
+  num_files = nfiles.nf;
 
   p_menumax = num_files;
   if((pa_files = malloc(sizeof(char*)*num_files)) == NULL){
@@ -450,12 +447,13 @@ char **con_pa_files(char * path, int *p_index){
 }
 
 void draw_child_level(char c, int item, char *cwd, char **htable, marked_t *marking){
-  werase(child_win);
-  int i = 0, chmenu = 0;
+  int i,chmenu;
   char **localchild = curr_level[item].child;
   int cwdlen;
-  //char cwd[MAXPATHLEN];
   char newstr[MAXPATHLEN] = {0};
+	i = 0;
+	chmenu = 0;
+  werase(child_win);
   strcat(newstr, cwd);
   cwdlen = strlen(newstr);
   newstr[cwdlen] = '/';
@@ -463,12 +461,6 @@ void draw_child_level(char c, int item, char *cwd, char **htable, marked_t *mark
   cwdlen = strlen(newstr);
   newstr[cwdlen] = '/';
   cwdlen++;
-  /*
-  if(getcwd(cwd, sizeof(cwd)) == NULL){
-    fprintf(stderr, "Failed to get current working directory:87\n");
-    exit(EXIT_FAILURE);
-  }
-  */
    
   if(c_menumax == 0){
     werase(child_win);
@@ -501,17 +493,14 @@ void draw_child_level(char c, int item, char *cwd, char **htable, marked_t *mark
     mvwaddstr(child_win, i, 2, localchild[i]);
     wattroff(child_win,A_REVERSE);
     if(htableLookup(newstr, htable)){
-     //wattrset(child_win,COLOR_PAIR(1)| A_BOLD);
      wattrset(child_win,COLOR_PAIR(WHATPAIR(c, marking))| A_BOLD);
      mvwaddstr(child_win, i, 0 ,"-");
      wrefresh(child_win);
-     //wattroff(child_win, COLOR_PAIR(1) | A_BOLD);
      wattroff(child_win,COLOR_PAIR(WHATPAIR(c, marking))| A_BOLD);
     }
     memset(newstr+cwdlen,0, MAXPATHLEN-cwdlen);
   }
   wrefresh(child_win);
-  //refresh();
 }
 
 void draw_curr_level(char c, int item,  char** htable, marked_t *marking){
@@ -535,19 +524,15 @@ void draw_curr_level(char c, int item,  char** htable, marked_t *marking){
   for (i = 0; i < c_menumax; i++) {
     newstr = strcat(cwd,curr_level[i].name);
     if(i == item) {
-      //wattron(curr_win, A_REVERSE);
       wattron(curr_win, A_STANDOUT);
     }
-    //mvwaddstr(curr_win, i, 2, curr_level[i].name);
     mvwaddnstr(curr_win, i, 2, curr_level[i].name,COLS/9*2);
-    //wattroff(curr_win, A_REVERSE);
     wattroff(curr_win, A_STANDOUT);
     if(htableLookup(newstr, htable)){
      wattrset(curr_win,COLOR_PAIR(WHATPAIR(c, marking))| A_BOLD);
      mvwaddstr(curr_win, i, 0 ,"-");
      wrefresh(curr_win);
      wattroff(curr_win,COLOR_PAIR(WHATPAIR(c, marking))| A_BOLD);
-     //wattroff(curr_win, COLOR_PAIR(1) | A_BOLD);
     }
     memset(cwd+cwdlen,0, strlen(curr_level[i].name));
   }
@@ -557,9 +542,6 @@ void draw_curr_level(char c, int item,  char** htable, marked_t *marking){
     wattron(curr_win, A_STANDOUT);
     mvwaddstr(curr_win, i, 0, "Empty ");
   }
-  //mvwaddstr(curr_win,17,25, "Use jk keys to move; Enter to select");
-  //wrefresh(curr_win);
-  //refresh();
 }
 
 void draw_paren_level(int *p_ind){
@@ -588,7 +570,6 @@ void draw_paren_level(int *p_ind){
     wattroff(paren_win, A_REVERSE);
   }
   wrefresh(paren_win);
-  //refresh();
 }
 
 void print_level(char** level, int num){
@@ -632,8 +613,11 @@ void get_num_files(char * path, num_files_t *numfiles){
   struct dirent *entry;
   char *filename;
   if((dir = opendir(path)) == NULL){
+		if(errno == EACCES){
+			return;
+		}
     fprintf(stderr, "Failed to get opendinr in get_num_files\n");
-    return;
+		exit(EXIT_FAILURE);
   }
   while((entry =readdir(dir)) != NULL){
     filename = entry->d_name;
@@ -651,6 +635,8 @@ void get_num_files(char * path, num_files_t *numfiles){
 
 void showFileContents(char *filename){
   int fd;
+  char buffer[2048];
+	ssize_t readbytes;
   if((fd = open(filename , O_RDONLY)) == -1){
     if(errno == EACCES){
       mvwaddstr(child_win,0,0,"Permission Denied\n");
@@ -661,8 +647,7 @@ void showFileContents(char *filename){
     fprintf(stderr, "Failed to open file\n ");
     exit(EXIT_FAILURE);
   }
-  char buffer[2048];
-  ssize_t readbytes = read(fd, buffer, sizeof(buffer) - 1);
+  readbytes = read(fd, buffer, sizeof(buffer) - 1);
   if(readbytes == -1){
     fprintf(stderr, "Failed to read from file\n");
     exit(EXIT_FAILURE);
