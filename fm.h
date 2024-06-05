@@ -19,10 +19,12 @@
 
 #define WHATPAIR(c,marking) \
   ((c) == 'y' ? 1 : ((c) == 'd' ? 2 : color_map[marking->command]))  
+
 typedef struct curr_node {
   int nf;
   int nh;
   int fileflag;
+	int pm;
   char *name;
   char **hiddens;
   char **child;
@@ -45,7 +47,7 @@ void draw_child_level(char c, int item, char *cwd, char **htable, marked_t *mark
 void print_level(char** level, int num);
 void update_curr_level(int *p_index);
 
-char** con_ch_files(char *filename);
+char** con_ch_files(char *filename, int i);
 char** con_pa_files(char *filename, int* p_index);
 
 int is_dir(char *filename);

@@ -331,7 +331,7 @@ void con_files(char *path){
       curr[i].name = strdup(filename);
       curr[i].child = NULL;
       if(is_dir(filename)){
-        curr[i].child = con_ch_files(filename);
+        curr[i].child = con_ch_files(filename, i);
         curr[i].fileflag = 0;
       }else{
         curr[i].fileflag = 1;
@@ -343,7 +343,7 @@ void con_files(char *path){
   closedir(dir);
 }
 
-char **con_ch_files(char *path){
+char **con_ch_files(char *path, int index){
   DIR *dir;
   struct dirent *entry;
   int i = 0;
@@ -365,12 +365,13 @@ char **con_ch_files(char *path){
 
   if((dir = opendir(path)) == NULL){
 		if(errno == EACCES){
+			curr_level[index].pm = 0;
 			return NULL;
 		}
     fprintf(stderr, "Failed to get opendir in con_ch_files\n");
     exit(EXIT_FAILURE);
   }
-
+	curr_level[index].pm = 1;
   
   while((entry = readdir(dir)) != NULL){
     filename = entry->d_name;
@@ -471,9 +472,13 @@ void draw_child_level(char c, int item, char *cwd, char **htable, marked_t *mark
     return;
   }
   
+	if(curr_level[item].pm == 0){
+    mvwaddstr(child_win, 0, 0, "Permissio Require");
+    wrefresh(child_win);
+    return;
+	}
   if(!localchild){
     mvwaddstr(child_win, 0, 0, "Empty");
-    
     wrefresh(child_win);
     return;
   }
